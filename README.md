@@ -6,7 +6,7 @@ A repository summarizing different docker pipelines.
 
 ### Jenkins
 
-- A simple docker pipeline for jenkins and a smtp (exim4) server distribution
+A simple docker pipeline for jenkins and a smtp (exim4) server distribution
 
 ### ELK
 
