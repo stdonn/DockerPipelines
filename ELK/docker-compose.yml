@@ -1,0 +1,150 @@
+version: '3'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.6.2
+    container_name: elasticsearch
+    hostname: elasticsearch
+    ports:
+      - 9200:9200
+      - 9300:9300
+    restart: always
+    networks:
+      - ELK_net
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    volumes:
+      - /Users/stephan.donndorf/dev/elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD", "curl","-s" ,"-f", "-u", "elastic", "http://localhost:9200/_cat/health"]
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    deploy:
+      restart_policy:
+        condition: any
+    
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.6.2
+    container_name: kibana
+    hostname: kibana
+    # volumes:
+    #   - ./config/kibana.yml:/usr/share/kibana/config/kibana.yml
+    environment:
+      SERVER_NAME: kibana
+      ELASTICSEARCH_HOSTS: http://elasticsearch
+    restart: always
+    depends_on:
+      - elasticsearch
+    ports:
+      - 5601:5601
+    networks:
+      - ELK_net
+    deploy:
+      restart_policy:
+        condition: any
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-f", "http://localhost:5601/login"]
+      retries: 6
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:6.6.2
+    container_name: logstash
+    hostname: logstash
+    volumes:
+      - ./logstash-pipeline/:/usr/share/logstash/pipeline/
+      - ./config/logstash.yml:/usr/share/logstash/config/logstash.yml
+    command: bash -c "logstash && bin/logstash-plugin install logstash-input-beats logstash-input-heartbeat"
+    restart: always
+    depends_on:
+      - elasticsearch
+      - kibana
+    ports:
+      - 5044:5044
+    networks:
+      - ELK_net
+    deploy:
+      restart_policy:
+        condition: any
+
+  # filebeat:
+  #   image: docker.elastic.co/beats/filebeat:6.6.2
+  #   container_name: filebeat
+  #   hostname: filebeat
+  #   user: root
+  #   restart: always
+  #   depends_on:
+  #     - elasticsearch
+  #     - logstash
+  #   volumes:
+  #     - ./config/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+  #     - /Users/stephan.donndorf/tomedo-server/logs:/filebeat-logs/
+  #     # - /Users/stephan.donndorf/Library/tomedoServer:/filebeat-logs/
+  #   networks:
+  #     - ELK_net
+  #   deploy:
+  #     restart_policy:
+  #       condition: any
+
+  # metricbeat:
+  #   image: docker.elastic.co/beats/metricbeat:6.6.2
+  #   container_name: metricbeat
+  #   hostname: metricbeat
+  #   restart: always
+  #   user: root
+  #   depends_on:
+  #     - elasticsearch
+  #     - logstash
+  #   volumes:
+  #     - ./config/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+  #     - /Users/stephan.donndorf/tomedo-server/logs:/filebeat-logs/
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #     - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+  #     - /proc:/hostfs/proc
+  #     - /:/hostfs:ro
+  #   networks:
+  #     - ELK_net
+  #   # command: ["--strict.perms=false", "-system.hostfs=/hostfs"]
+  #   command: metricbeat -e -system.hostfs=/hostfs -strict.perms=false
+  #   deploy:
+  #     restart_policy:
+  #       condition: any
+    
+  # #Heartbeat container
+  # heartbeat:
+  #   container_name: heartbeat
+  #   hostname: heartbeat
+  #   image: docker.elastic.co/beats/heartbeat:6.6.2
+  #   volumes:
+  #     #Mount the heartbeat configuration so users can make edits
+  #     - ./config/heartbeat.yml:/usr/share/heartbeat/heartbeat.yml
+  #   depends_on:
+  #     - elasticsearch
+  #     - logstash
+  #   command: heartbeat -e -strict.perms=false
+  #   networks:
+  #     - ELK_net
+  #   restart: always
+  #   deploy:
+  #     restart_policy:
+  #       condition: any
+
+  # packetbeat:
+  #   image: docker.elastic.co/beats/packetbeat:6.6.2
+  #   container_name: packetbeat
+  #   hostname: packetbeat
+  #   volumes:
+  #     - ./config/packetbeat.yml:/usr/share/packetbeat/packetbeat.yml
+  #   cap_add: ['NET_RAW', 'NET_ADMIN']
+  #   network_mode: host
+  #   command: packetbeat -e -E output.elasticsearch.hosts='["localhost:9200"]' -strict.perms=false
+  #   depends_on:
+  #     - elasticsearch
+  #     - logstash
+  #   deploy:
+  #     restart_policy:
+  #       condition: any
+
+networks:
+  ELK_net:

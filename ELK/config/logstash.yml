@@ -1,0 +1,6 @@
+#modules:
+#- name: netflow
+#  var.elasticsearch.hosts: elasticsearch
+#  var.kibana.host: kibana
+#  var.input.tcp.port: 5606
+path.config: /usr/share/logstash/pipeline/

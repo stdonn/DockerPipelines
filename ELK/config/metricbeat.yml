@@ -1,0 +1,55 @@
+# metricbeat:
+#   config:
+#     modules:
+#       path: ${path.config}/modules.d/*.yml
+#       reload.period: 10s
+#       reload.enabled: true
+
+metricbeat.autodiscover:
+  providers:
+    - type: docker
+      hints.enabled: true
+
+metricbeat:
+  modules:
+  - module: docker
+    metricsets:
+      - "container"
+      - "cpu"
+      - "diskio"
+      - "healthcheck"
+      - "info"
+      #- "image"
+      - "memory"
+      - "network"
+    hosts: ["unix:///var/run/docker.sock"]
+    period: 10s
+    enabled: true
+
+  - module: system
+    metricsets:
+      - core
+      - cpu
+      # - load
+      - diskio
+      - filesystem
+      - fsstat
+      - memory
+      - network
+      - process
+      # - socket
+    enabled: true
+    period: 10s
+    processes: ['.*']
+    cpu_ticks: true
+    process.cgroups.enabled: true
+
+output.elasticsearch:
+  hosts: ["localhost:9200"]
+  # hosts: '${ELASTICSEARCH_HOSTS:elasticsearch:9200}'
+  # username: '${ELASTICSEARCH_USERNAME:}'
+  # password: '${ELASTICSEARCH_PASSWORD:}'
+
+logging.to_files: false
+
+setup.dashboards.enabled: true

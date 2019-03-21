@@ -1,0 +1,6 @@
+FROM jenkins/jenkins:latest
+
+USER root
+
+RUN addgroup docker
+RUN adduser jenkins docker

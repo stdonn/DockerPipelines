@@ -1,0 +1,9 @@
+filebeat.prospectors:
+- type: log
+  paths:
+    - /filebeat-logs/*.log
+    - /Users/stephan.donndorf/tomedo-server/logs
+output.logstash:
+  hosts: ["localhost:5044"]
+
+setup.dashboards.enabled: true

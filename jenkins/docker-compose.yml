@@ -1,0 +1,49 @@
+version: '3'
+services:
+  jenkins:
+    build:
+      context: ./
+      dockerfile: Dockerfile_jenkins
+    # image: jenkins/jenkins:latest
+    container_name: jenkins
+    ports:
+      - 8080:8080
+      - 50000:50000
+    privileged: true
+    restart: always
+    networks:
+      - jenkins_net
+    volumes:
+      # enable persistent volume (warning: make sure that the local jenkins_home folder is created)
+      - jenkins_home:/var/jenkins_home
+      # mount docker sock and binary for docker in docker (only works on linux)
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+    deploy:
+      restart_policy:
+        condition: any
+
+  exim-mail:
+    build:
+      context: ./
+      dockerfile: Dockerfile_exim
+    container_name: exim-mail
+    # volumes:
+    #   - /tmp/exim:/var/spool/exim4
+    ports:
+      - "1025:25"
+    networks:
+      - jenkins_net
+    deploy:
+      restart_policy:
+        condition: any
+    restart: always
+    environment:
+      PRIMARY_HOST: docker-build.jenkins
+      ALLOWED_HOSTS: "*"
+
+volumes:
+  jenkins_home:
+
+networks:
+  jenkins_net:
